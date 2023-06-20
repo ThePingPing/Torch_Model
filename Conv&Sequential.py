@@ -192,6 +192,7 @@ def ConvAndSequential():
         ax[0].set_ylabel('Loss')
         ax[0].set_xlabel('epoch')
         ax[0].set_title('Losses')
+        ax[0].legend()
 
         ax[1].plot(train_accuracy, 's-', label='Train, accuracy')
         ax[1].plot(test_accuracy, 'o-', label='Test accuracy, ')
@@ -202,6 +203,49 @@ def ConvAndSequential():
         ax[1].legend()
         plt.show()
 
+    def plot_test_prediction(GaussNet,test_loader):
+        X,y = next(iter(test_loader))
+        yHat = GaussNet(X)
+        fig, axs = plt.subplots(2, 10, figsize=(13, 4))
+
+        for i, ax in enumerate(axs.flatten()):
+            G = torch.squeeze(X[i, 0, :, :]).detach()
+            ax.imshow(G, vmin=-1, vmax=1, cmap="jet")
+            predict_label = (int(y[i].item()), int(yHat[i].item() > 0))
+            ax.set_title('T:%s, P:%s' %predict_label)
+            ax.set_xticks([])
+            ax.set_yticks([])
+        plt.show()
+
+    def plot_filter_model(GaussNet):
+        filter_conv1 = GaussNet.enc[0].weight
+        filter_conv2 = GaussNet.enc[3].weight
+
+        print(filter_conv1.shape) ##--> torch.Size([6, 1, 3, 3])
+        print(filter_conv2.shape) ##--> torch.Size([4, 6, 3, 3])
+        fig, axs = plt.subplots(1, 6, figsize=(13, 4))
+
+        for i, ax in enumerate(axs.flatten()):
+            G = torch.squeeze(filter_conv1[i, 0, :, :]).detach()
+            ax.imshow(G, vmin=-1, vmax=1, cmap="Purples")
+            ax.axis("off")
+
+        plt.suptitle("The Filters for the first Conv")
+        plt.show()
+
+        fig, axs = plt.subplots(4, 6, figsize=(15, 9))
+
+        for i in range(6 * 4):
+            index_filter = np.unravel_index(i, (4, 6))
+            print(index_filter)
+            G = torch.squeeze(filter_conv2[index_filter[0], index_filter[1], :, :]).detach()
+            axs[index_filter].imshow(G, vmin=-1, vmax=1, cmap="Purples")
+            axs[index_filter].axis('off')
+
+        plt.suptitle('Second convolution layer filters')
+        plt.show()
+
+
     images, labels, image_per_cat, image_size = create_image_data()
     plot_some_images(images, labels, image_per_cat)
     train_loader, test_loader = data_loader_convert(images, labels)
@@ -210,6 +254,8 @@ def ConvAndSequential():
     test_model(GaussNet, loss_function, train_loader, image_size)
     train_Loss, test_Loss, train_accuracy, test_accuracy = train_model(GaussNet, loss_function, optimizer, train_loader, test_loader)
     plot_train_result(train_Loss, test_Loss, train_accuracy, test_accuracy)
+    plot_test_prediction(GaussNet,test_loader)
+    plot_filter_model(GaussNet)
 
 
 if __name__ == '__main__':
